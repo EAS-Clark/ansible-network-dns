@@ -1,0 +1,67 @@
+---
+# tasks file for gateway
+
+
+  - name: Refresh subscription manager
+    command: subscription-manager refresh 
+
+
+  - name: Setting gateway within ifcfg-ens160  
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-ens160
+      line: "GATEWAY={{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}"
+      insertafter: EOF
+      create: yes
+
+  - name: Editing network service
+    blockinfile:
+      dest: /etc/sysconfig/network
+      block: |
+        NETWORKING=yes
+        HOSTNAME=nat
+        GATEWAY={{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}
+
+
+  - name: Install the latest of iptables-services
+    ansible.builtin.yum:
+      name: iptables-services
+      state: latest
+
+
+  - name: Flushing iptables
+    shell: iptables -F &&  iptables -t nat -F && iptables -t mangle -F
+
+  - name: Deleting iptables
+    shell: iptables -X && iptables -t nat -X && iptables -t mangle -X
+
+  - name: IP forwarding and masquerading
+    shell: iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE && iptables -A FORWARD -i eth1 -j ACCEPT
+
+
+  - name: Setting ip forward to true
+    shell: sysctl -w net.ipv4.ip_forward=1
+
+
+  - name: Setting ip forward to permanent
+    shell: sysctl -p /etc/sysctl.conf
+
+
+  - name: saving iptables.service
+    shell: service iptables save
+
+
+  - name: reloading iptables.service
+    service:
+      name: iptables.service
+      state: restarted    
+
+
+  - name: Connection reload
+    shell: nmcli connection reload
+
+  - name: ens160 up
+    shell: nmcli connection up ens160
+
+  - name: ifup ens160
+    shell: ifup ens160
+
