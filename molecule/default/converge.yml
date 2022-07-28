@@ -2,6 +2,6 @@
 - name: Converge
   hosts: all
   tasks:
-    - name: "Include clark.gateway"
+    - name: "Include clark.dns"
       include_role:
-        name: "clark.gateway"
+        name: "clark.dns"
