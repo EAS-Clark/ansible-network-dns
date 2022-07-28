@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include clark.dns"
+      include_role:
+        name: "clark.dns"
