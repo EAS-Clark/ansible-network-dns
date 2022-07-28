@@ -1,2 +1,261 @@
 ---
 # tasks file for dns
+
+# subscription-manager refresh
+  - name: Refresh subscription manager
+    command: subscription-manager refresh 
+
+
+# yum install install bind bind-utils
+
+  - name: Install the latest of bind bind-utils
+    ansible.builtin.yum:
+      name: "{{ packages }}"
+      state: latest
+    vars:
+      packages:
+      - bind
+      - bind-utils
+      
+      
+# systemctl enable named -(enable the DNS)
+
+  - name: named 
+    service:
+      name: named
+      enabled: yes
+
+
+
+# edit /etc/named.conf-Configure DNS and add .localhost to allow query)    
+
+ 
+
+# allow-query     { localhost; };      -->     allow-query     { localhost; 10.0.0.0/24; };
+  - name: Replacing allow-query within named.conf
+    ansible.builtin.blockinfile:
+      path: /etc/named.conf
+      marker: "allow-query     { localhost; };"
+      block: "allow-query     { localhost; 10.0.0.0/24;};"
+
+
+
+# After 
+
+#     pid-file "/run/named/named.pid";
+#     session-keyfile "/run/named/session.key";
+# add 
+
+#  include "/etc/crypto-policies/back-ends/bind.config";
+
+  - name: adding crypto-policies within named.conf  
+    ansible.builtin.blockinfile:
+      path: /etc/named.conf
+      insertafter:  
+      marker: 'pid-file "/run/named/named.pid";'
+      block: 'include "/etc/crypto-policies/back-ends/bind.config";'
+
+   
+
+ 
+
+# After 
+# include "/etc/named.rfc1912.zones";
+# include "/etc/named.root.key";
+
+# add
+
+# //foward zone
+# zone "{{ domainName }}.local" IN {.  # <--- {{ domainName }} 
+#     type master;
+#     file "{{ domainName }}.local.db";     # <--- {{ domainName }} .db
+#     allow-update { none; };
+#     allow-query { any; };
+# };
+# //back zone
+# zone "0.0.10.in-addr.arpa" IN {
+#     type master;
+#     file "{{ domainName }}.local.rev";   # <--- {{ domainName }} .rev
+#     allow-update { none; };
+#     allow-query { any; };
+# };
+ 
+
+  - name: adding foward zone and back zone to named.conf
+    ansible.builtin.blockinfile:
+      path: /etc/named.conf
+      insertafter:  
+      marker: 'include "/etc/named.root.key";'
+      block: |
+        //foward zone
+        zone "{{ domainName }}.local" IN {
+          type master;
+          file "{{ domainName }}.local.db";
+          allow-update { none; };
+          allow-query { any; };
+        };
+        //back zone
+        zone "0.0.10.in-addr.arpa" IN {
+          type master;
+          file "{{ domainName }}.local.rev";   
+          allow-update { none; };
+          allow-query { any; };
+        };
+
+
+ 
+
+# edit /var/named/{{ domainName }}.co.uk.db  -(Create the forward zone file with hostnames )   
+
+#  (will use domain name for file name)
+
+
+  - name: Setting gateway within ifcfg-ens224
+    blockinfile:
+      dest: /var/named/{{ domainName }}.local.db
+      insertafter: EOF
+      create: yes
+      block: |
+        \$TTL 86400
+        @ IN SOA dns-primary.{{ domainName }}.local. admin.{{ domainName }}.local. (
+                                    2020011800 ;Serial
+                                    3600 ;Refresh
+                                    1800 ;Retry
+                                    604800 ;Expire 
+                                    86400 ;Minimum TTL
+        )
+        ;Name Server Information
+        @ IN NS dns-primary.{{ domainName }}.local.
+        ;IP Address for Name Server
+        dns-primary IN A {{ dns_ip }}
+        ;A Record for the following Host name  
+        Gateway   IN   A   {{ gateway_ip }}  
+        DHCP  IN   A   {{ dhcp_ip }}   
+        DNS  IN   A   {{ dns_ip }} 
+            
+        ;CNAME Record
+        ftp  IN   CNAME www.{{ domainName }}.local. 
+
+
+
+# edit /var/named/{{ domainName }}.local.rev - (PTR Record IP address to Hostname)
+
+#  (will use domain name for file name)
+
+
+# \$TTL 86400
+# @ IN SOA dns-primary.{{ domainName }}. admin.{{ domainName }}.local. (
+#                             2020011800 ;Serial
+#                             3600 ;Refresh
+#                             1800 ;Retry
+#                             604800 ;Expire  
+#                             86400 ;Minimum TTL
+# )
+# ;Name Server Information
+# @ IN NS dns-primary.{{ domainName }}.local. # <-- domain name
+# dns-primary IN A 10.0.0.3  # <-- dns ip 
+# ;Reverse lookup for Name Server
+# 3 IN PTR dns-primary.{{ domainName }}.local. # <-- dns end of ip   // domain name
+# ;PTR Record IP address to Hostname   # will need to mach names in db file (end of ips as well as domain names)
+# 3       IN      PTR     DNS.{{ domainName }}.local. 
+# 2       IN      PTR     DHCP.{{ domainName }}.local.
+# 1       IN      PTR     Gateway.{{ domainName }}.local.
+ 
+
+
+  - name: Setting gateway within ifcfg-ens224
+    blockinfile:
+      dest: /var/named/{{ domainName }}.local.rev
+      insertafter: EOF
+      create: yes
+      block: |
+        \$TTL 86400
+        @ IN SOA dns-primary.{{ domainName }}. admin.{{ domainName }}.local. (
+                                    2020011800 ;Serial
+                                    3600 ;Refresh
+                                    1800 ;Retry
+                                    604800 ;Expire  
+                                    86400 ;Minimum TTL
+        )
+        ;Name Server Information
+        @ IN NS dns-primary.{{ domainName }}.local. # <-- domain name
+        dns-primary IN A {{ dns_ip }}  # <-- dns ip 
+        ;Reverse lookup for Name Server
+        {{ dns_ip | split('.') | last }}  IN PTR dns-primary.{{ domainName }}.local. # <-- dns end of ip   // domain name
+        ;PTR Record IP address to Hostname   # will need to mach names in db file (end of ips as well as domain names)
+        {{ dns_ip | split('.') | last }}       IN      PTR     DNS.{{ domainName }}.local. 
+        {{ dhcp_ip | split('.') | last }}       IN      PTR     DHCP.{{ domainName }}.local.
+        {{ gateway_ip | split('.') | last }}       IN      PTR     Gateway.{{ domainName }}.local.
+
+
+
+
+
+# Allow named to have access to the files 
+# chown named:named /var/named/{{ domainName }}.local.db # < -- domain name
+  - name: Allow named to have access to {{ domainName }}.local.db
+    command: chown named:named /var/named/{{ domainName }}.local.db 
+# chown named:named /var/named/{{ domainName }}.local.rev # < -- domain name
+
+  - name: Allow named to have access to {{ domainName }}.local.rev
+    command: chown named:named /var/named/{{ domainName }}.local.rev
+
+
+
+
+# add domain (.rev and .db )files to the named-checkzone
+
+# named-checkconfnamed-checkzone {{ domainName }}.local /var/named/{{ domainName }}.local.db
+  - name: add domain .rev files to the named-checkzone
+    command: named-checkzone {{ domainName }}.local /var/named/{{ domainName }}.local.db
+
+# named-checkzone 10.0.0.3 /var/named/{{ domainName }}.local.rev 
+  - name: add domain .db files to the named-checkzone
+    command: named-checkzone {{ dns_ip }} /var/named/{{ domainName }}.local.rev
+
+
+# hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}
+
+
+# restart named 
+
+  - name: reloading named
+    service:
+      name: named
+      state: restarted
+
+ 
+
+# add dns to fire wall
+
+# firewall-cmd  --add-service=dns --zone=public  --permanentfirewall-cmd --reload
+
+  - name: permit traffic in default zone for dhcp service
+    ansible.posix.firewalld:
+      service: dns
+      permanent: yes
+      state: enabled
+
+ 
+
+# edit /etc/sysconfig/network-scripts/ifcfg-ens224
+
+# "DNS1=10.0.0.3" 
+
+  - name: Setting dns within ifcfg-ens224
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-ens224
+      insertafter: EOF
+      line: "{{ dns_ip }}"
+ 
+# restart network
+
+  - name: reloading network
+    service:
+      name: network
+      state: restarted
+
+
+
+ 
+

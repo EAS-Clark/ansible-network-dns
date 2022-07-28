@@ -1,2 +1,8 @@
 ---
 # vars file for dns
+gateway_ip: 10.0.0.1
+dhcp_ip: 10.0.0.2
+domainName: "clark"
+dns_ip: 10.0.0.3
+gateway_mac: "00:50:56:87:da:94"
+

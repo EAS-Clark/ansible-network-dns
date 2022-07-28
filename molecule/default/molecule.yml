@@ -28,8 +28,11 @@
       num_cpus: 2 # is cpu number to be configured to an instance
       memory_mb: 2048 # is memory size(MB) to be configured to an instance
     networks:
-      - name: clark # is a port group to be assigned to an instance
+      - name: VM Network # is a port group to be assigned to an instance
         type: dhcp
+      - name: clark # is a port group to be assigned to an instance
+        ip: 10.0.0.3
+        netmask: 255.255.255.0
     group: dns
   provisioner:
     name: ansible
