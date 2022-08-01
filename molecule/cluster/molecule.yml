@@ -9,7 +9,7 @@ driver:
   validate_certs: false
   datacenter: Cardiff
   esxi_hostname: 192.168.1.102
-  folder: /Ansible/molecule
+  folder: /Ansible/molecule/clark
   vm_username: root
   vm_password: Renegade187!
   instance_os_type: linux # is possible only specify [linux or windows]
@@ -63,6 +63,18 @@ platforms:
       - name: clark # is a port group to be assigned to an instance
         ip: 10.0.0.3
         netmask: 255.255.255.0
+    group: dns
+
+  - name: clark-test # is an instance name
+    template: RHEL79-Thin # is to be used as a template when cloning an instance
+    #resource_pool: change me to resource pool
+    #snapshot_src: change me to snapshot name # is a snapshot name to be possible specified if you want to use linked clone.
+    hardware:
+      num_cpus: 2 # is cpu number to be configured to an instance
+      memory_mb: 2048 # is memory size(MB) to be configured to an instance
+    networks:
+      - name: clark # is a port group to be assigned to an instance
+        type: dhcp
     group: dns
 
 provisioner:
