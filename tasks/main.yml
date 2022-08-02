@@ -238,12 +238,16 @@
 
 # # "DNS1=10.0.0.3" 
 
-  - name: "Setting dns within ifcfg-{{ dns_interface_in_name }}"
-    lineinfile:
-      dest: "/etc/sysconfig/network-scripts/ifcfg-{{ dns_interface_in_name }}"
+  - name: Editing network service
+    blockinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-{{ dns_interface_in_name }}
+      block: |
+        DEFROUTE=yes
+        GATEWAY={{ gateway_ip }}
+        DOMAIN={{ domainName }}
+        DNS1={{ dns_ip }}
       insertafter: EOF
-      line: "{{ dns_ip }}"
- 
+
 # # restart network
 
   - name: reloading network
