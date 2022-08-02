@@ -21,14 +21,20 @@
 # systemctl enable named -(enable the DNS)
 # service named start
 
+  - name: named started enabled
+    service:
+      name: named
+      state: started
 
   - name: named 
     service:
       name: named
       enabled: yes
 
-  - name: removing /etc/named.conf
-    command: rm /etc/named.conf
+  - name: Remove file /etc/named.conf
+    ansible.builtin.file:
+      path: /etc/named.conf
+      state: absent
 
 
   - name: adding foward zone and back zone to named.conf
@@ -120,16 +126,16 @@
 
  
 
-# edit /var/named/{{ domainName }}.co.uk.db  -(Create the forward zone file with hostnames )   
+# # edit /var/named/{{ domainName }}.co.uk.db  -(Create the forward zone file with hostnames )   
 
-#  (will use domain name for file name)
+# #  (will use domain name for file name)
 
 
   - name: "writting the file /var/named/{{ domainName }}.local.db"
     blockinfile:
       dest: /var/named/{{ domainName }}.local.db
       insertafter: EOF
-      marker: "// from ansible"
+      marker: ";from ansible"
       create: yes
       block: |
         $TTL 86400
@@ -154,11 +160,11 @@
 
 
 
-  - name: "Setting gateway within ifcfg-{{ dns_interface_in_name }}"
+  - name: "writting the file /var/named/{{ domainName }}.local.rev"
     blockinfile:
       dest: /var/named/{{ domainName }}.local.rev
       insertafter: EOF
-      marker: "// from ansible"
+      marker: ";from ansible"
       create: yes
       block: |
         $TTL 86400
@@ -180,10 +186,19 @@
         1 IN PTR gateway.clark.local.
 
 
+  # - name: Change file ownership to named for db
+  #   ansible.builtin.file:
+  #     path: /var/named/{{ domainName }}.local.db 
+  #     owner: :named 
 
   - name: Allow named to have access to {{ domainName }}.local.db
-    command: chown :named /var/named/{{ domainName }}.local.db 
+    command: chown :named /var/named/{{ domainName }}.local.db
 
+
+#   # - name: Change file ownership to named for db
+#   #   ansible.builtin.file:
+#   #     path: /var/named/{{ domainName }}.local.rev 
+#   #     owner: :named 
 
   - name: Allow named to have access to {{ domainName }}.local.rev
     command: chown :named /var/named/{{ domainName }}.local.rev
@@ -201,7 +216,7 @@
 
 
 
-# restart named 
+# # restart named 
 
   - name: reloading named
     service:
@@ -210,7 +225,7 @@
 
  
 
-# add dns to fire wall
+# # add dns to fire wall
 
 # firewall-cmd  --add-service=dns --zone=public  --permanentfirewall-cmd --reload
 
@@ -221,17 +236,17 @@
       state: enabled
 
 
-# edit /etc/sysconfig/network-scripts/ifcfg-ens224
+# # edit /etc/sysconfig/network-scripts/ifcfg-ens224
 
-# "DNS1=10.0.0.3" 
+# # "DNS1=10.0.0.3" 
 
-  # - name: "Setting dns within ifcfg-{{ dns_interface_in_name }}"
-  #   lineinfile:
-  #     dest: "/etc/sysconfig/network-scripts/ifcfg-{{ dns_interface_in_name }}"
-  #     insertafter: EOF
-  #     line: "{{ dns_ip }}"
+  - name: "Setting dns within ifcfg-{{ dns_interface_in_name }}"
+    lineinfile:
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{ dns_interface_in_name }}"
+      insertafter: EOF
+      line: "{{ dns_ip }}"
  
-# restart network
+# # restart network
 
   - name: reloading network
     service:
