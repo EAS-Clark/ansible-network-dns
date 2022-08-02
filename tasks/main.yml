@@ -124,8 +124,6 @@
 
 
 
- 
-
 # # edit /var/named/{{ domainName }}.co.uk.db  -(Create the forward zone file with hostnames )   
 
 # #  (will use domain name for file name)
@@ -151,7 +149,7 @@
         @ IN NS dns-primary.clark.local.
 
         ;IP for Name Server
-        dns-primary IN A 1.0.0.3
+        dns-primary IN A 10.0.0.3
 
         ;A Record for IP address to Hostname 
         dhcp IN A 10.0.0.2
@@ -186,22 +184,22 @@
         1 IN PTR gateway.clark.local.
 
 
-  # - name: Change file ownership to named for db
-  #   ansible.builtin.file:
-  #     path: /var/named/{{ domainName }}.local.db 
-  #     owner: :named 
+  - name: Change file ownership to named for db
+    ansible.builtin.file:
+      path: /var/named/{{ domainName }}.local.db 
+      group: named 
 
-  - name: Allow named to have access to {{ domainName }}.local.db
-    command: chown :named /var/named/{{ domainName }}.local.db
+  # - name: Allow named to have access to {{ domainName }}.local.db
+  #   command: chown :named /var/named/{{ domainName }}.local.db
 
 
-#   # - name: Change file ownership to named for db
-#   #   ansible.builtin.file:
-#   #     path: /var/named/{{ domainName }}.local.rev 
-#   #     owner: :named 
+  - name: Change file ownership to named for db
+    ansible.builtin.file:
+      path: /var/named/{{ domainName }}.local.rev 
+      group: named 
 
-  - name: Allow named to have access to {{ domainName }}.local.rev
-    command: chown :named /var/named/{{ domainName }}.local.rev
+  # - name: Allow named to have access to {{ domainName }}.local.rev
+  #   command: chown :named /var/named/{{ domainName }}.local.rev
 
 
   - name: named-checkconf

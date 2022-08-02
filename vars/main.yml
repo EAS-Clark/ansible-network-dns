@@ -4,7 +4,7 @@ domainName: "clark"
 
 gateway_ip: 10.0.0.1
 gateway_ip_out: 192.168.6.101
-gateway_mac: "00:50:56:87:44:14"
+gateway_mac: "00:50:56:87:79:f3"
 gateway_interface_in_name: ens224
 gateway_interface_out_name: ens192
 
@@ -17,7 +17,7 @@ range_min: 10.0.0.10
 range_max: 10.0.0.50
 
 dns_ip: 10.0.0.3
-dns_mac: "00:50:56:87:d9:99"
+dns_mac: "00:50:56:87:47:7f"
 dns_interface_in_name: ens224
     
 
