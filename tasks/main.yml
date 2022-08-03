@@ -244,7 +244,7 @@
       block: |
         DEFROUTE=yes
         GATEWAY={{ gateway_ip }}
-        DOMAIN={{ domainName }}
+        DOMAIN={{ domainName }}.local
         DNS1={{ dns_ip }}
       insertafter: EOF
 
