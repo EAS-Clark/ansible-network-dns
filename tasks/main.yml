@@ -64,7 +64,7 @@
                 memstatistics-file "/var/named/data/named_mem_stats.txt";
                 recursing-file  "/var/named/data/named.recursing";
                 secroots-file   "/var/named/data/named.secroots";
-                allow-query     { localhost; 10.0.0.0/24; };
+                allow-query     { localhost; {{ subnet }}/24; };
 
                 /*
                 - If you are building an AUTHORITATIVE DNS server, do NOT enable recursion.
@@ -108,16 +108,16 @@
         include "/etc/named.root.key";
 
         //foward zone
-        zone "clark.local" IN {
+        zone "{{ domainName }}.local" IN {
                 type master;
-                file "clark.local.db";
+                file "{{ domainName }}.local.db";
                 allow-update { none; };
                 allow-query { any; };
         };
         //back zone
-        zone "0.0.10.in-addr.arpa" IN {
+        zone "{{ back_zone }}.in-addr.arpa" IN {
                 type master;
-                file "clark.local.rev";
+                file "{{ domainName }}.local.rev";
                 allow-update { none; };
                 allow-query { any; };
         };
@@ -137,7 +137,7 @@
       create: yes
       block: |
         $TTL 86400
-        @ IN SOA dns-primary.clark.local. admin.clark.local. (
+        @ IN SOA dns-primary.{{ domainName }}.local. admin.{{ domainName }}.local. (
             2019061800 ;Serial
             3600 ;Refresh
             1800 ;Retry
@@ -146,14 +146,14 @@
         )
 
         ;Name Server Information
-        @ IN NS dns-primary.clark.local.
+        @ IN NS dns-primary.{{ domainName }}.local.
 
         ;IP for Name Server
-        dns-primary IN A 10.0.0.3
+        dns-primary IN A {{ dns_ip }}
 
         ;A Record for IP address to Hostname 
-        dhcp IN A 10.0.0.2
-        gateway IN A 10.0.0.1
+        dhcp IN A {{ dhcp_ip }}
+        gateway IN A {{ gateway_ip }}
 
 
 
@@ -166,7 +166,7 @@
       create: yes
       block: |
         $TTL 86400
-        @ IN SOA dns-primary.clark.local. admin.clark.local. (
+        @ IN SOA dns-primary.{{ domainName }}.local. admin.{{ domainName }}.local. (
             2019061800 ;Serial
             3600 ;Refresh
             1800 ;Retry
@@ -174,14 +174,14 @@
             86400 ;Minimum TTL
         )
         ;Name Server Information
-        @ IN NS dns-primary.clark.local.
+        @ IN NS dns-primary.{{ domainName }}.local.
 
         ;Reverse lookup for Name Server
-        3 IN PTR dns-primary.clark.local.
+        3 IN PTR dns-primary.{{ domainName }}.local.
 
         ;PTR Record IP address to HostName
-        2 IN PTR dhcp.clark.local.
-        1 IN PTR gateway.clark.local.
+        2 IN PTR dhcp.{{ domainName }}.local.
+        1 IN PTR gateway.{{ domainName }}.local.
 
 
   - name: Change file ownership to named for db
@@ -256,6 +256,9 @@
       state: restarted
 
 
+  - name: "Removing {{ dns_interface_out_name }}"
+    community.general.nmcli:
+      conn_name: "{{ dns_interface_out_name }}"
+      state: absent
 
- 
-
+    
