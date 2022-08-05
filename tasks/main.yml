@@ -155,7 +155,7 @@
 
   - name: "making test file"
     lineinfile:
-      dest: /var/named/{{ domainName }}.local.db
+      dest: "/var/named/{{ domainName }}.local.db"
       insertafter: EOF
       marker: ";from ansible"
       line: "{{ item.name }} IN A {{ item.ip }}"
