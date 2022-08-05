@@ -152,10 +152,15 @@
         dns-primary IN A {{ dns_ip }}
 
         ;A Record for IP address to Hostname 
-        dhcp IN A {{ dhcp_ip }}
-        gateway IN A {{ gateway_ip }}
 
-
+  - name: "making test file"
+    lineinfile:
+      dest: /var/named/{{ domainName }}.local.db
+      insertafter: EOF
+      marker: ";from ansible"
+      line: "{{ item.name }} IN A {{ item.ip }}"
+    loop:
+     "{{ data }}"
 
 
   - name: "writting the file /var/named/{{ domainName }}.local.rev"
