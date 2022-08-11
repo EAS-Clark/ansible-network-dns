@@ -1,2 +1,33 @@
 ---
 # defaults file for dns
+---
+# defaults file for dhcp
+
+multi_mode: false
+
+domain_name: "clark"
+domain_name_extension: "local"
+
+subnet: 10.0.0.0
+range_min: 10.0.0.10
+range_max: 10.0.0.50
+three_octave: 10.0.0
+back_zone: 0.0.10
+
+data:
+  - name: gateway
+    ip: 10.0.0.1
+    ip_out: 192.168.1.100
+    mac_address: 0:50:56:87:79:f3
+    interface_in_name: test
+    interface_out_name: enssdfsdf192
+  - name: dhcp
+    ip: 10.0.0.2
+    mac_address: 0:50:56:87:79:f3
+    interface_in_name: ens224
+    interface_out_name: ens192
+  - name: dns
+    ip: 10.0.0.3
+    mac_address: 0:50:56:87:79:f3
+    interface_in_name: ens224
+    interface_out_name: ens192

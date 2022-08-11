@@ -108,16 +108,16 @@
         include "/etc/named.root.key";
 
         //foward zone
-        zone "{{ domainName }}.local" IN {
+        zone "{{ domain_name }}.{{ domain_name_extension }}" IN {
                 type master;
-                file "{{ domainName }}.local.db";
+                file "{{ domain_name }}.{{ domain_name_extension }}.db";
                 allow-update { none; };
                 allow-query { any; };
         };
         //back zone
         zone "{{ back_zone }}.in-addr.arpa" IN {
                 type master;
-                file "{{ domainName }}.local.rev";
+                file "{{ domain_name }}.{{ domain_name_extension }}.rev";
                 allow-update { none; };
                 allow-query { any; };
         };
@@ -129,15 +129,15 @@
 # #  (will use domain name for file name)
 
 
-  - name: "writting the file /var/named/{{ domainName }}.local.db"
+  - name: "writting the file /var/named/{{ domain_name }}.{{ domain_name_extension }}.db"
     blockinfile:
-      dest: /var/named/{{ domainName }}.local.db
+      dest: /var/named/{{ domain_name }}.{{ domain_name_extension }}.db
       insertafter: EOF
       marker: ";from ansible"
       create: yes
       block: |
         $TTL 86400
-        @ IN SOA dns-primary.{{ domainName }}.local. admin.{{ domainName }}.local. (
+        @ IN SOA dns-primary.{{ domain_name }}.{{ domain_name_extension }}. admin.{{ domain_name }}.{{ domain_name_extension }}. (
             2019061800 ;Serial
             3600 ;Refresh
             1800 ;Retry
@@ -146,32 +146,33 @@
         )
 
         ;Name Server Information
-        @ IN NS dns-primary.{{ domainName }}.local.
+        @ IN NS dns-primary.{{ domain_name }}.{{ domain_name_extension }}.
 
         ;IP for Name Server
-        dns-primary IN A {{ dns_ip }}
+        dns-primary IN A {{ data[3].ip }}
 
         ;A Record for IP address to Hostname 
 
   - name: "making test file"
     lineinfile:
-      dest: "/var/named/{{ domainName }}.local.db"
+      dest: "/var/named/{{ domain_name }}.{{ domain_name_extension }}.db"
       insertafter: EOF
       marker: ";from ansible"
-      line: "{{ item.name }} IN A {{ item.ip }}"
+      line: "{{ data[my_idx].name }} IN A {{ data[my_idx].ip }}"
     loop:
      "{{ data }}"
+    loop_control:
+      index_var: my_idx
 
-
-  - name: "writting the file /var/named/{{ domainName }}.local.rev"
+  - name: "writting the file /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev"
     blockinfile:
-      dest: /var/named/{{ domainName }}.local.rev
+      dest: /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev
       insertafter: EOF
       marker: ";from ansible"
       create: yes
       block: |
         $TTL 86400
-        @ IN SOA dns-primary.{{ domainName }}.local. admin.{{ domainName }}.local. (
+        @ IN SOA dns-primary.{{ domain_name }}.{{ domain_name_extension }}. admin.{{ domain_name }}.{{ domain_name_extension }}. (
             2019061800 ;Serial
             3600 ;Refresh
             1800 ;Retry
@@ -179,32 +180,32 @@
             86400 ;Minimum TTL
         )
         ;Name Server Information
-        @ IN NS dns-primary.{{ domainName }}.local.
+        @ IN NS dns-primary.{{ domain_name }}.{{ domain_name_extension }}.
 
         ;Reverse lookup for Name Server
-        3 IN PTR dns-primary.{{ domainName }}.local.
+        3 IN PTR dns-primary.{{ domain_name }}.{{ domain_name_extension }}.
 
         ;PTR Record IP address to HostName
-        2 IN PTR dhcp.{{ domainName }}.local.
-        1 IN PTR gateway.{{ domainName }}.local.
+        2 IN PTR dhcp.{{ domain_name }}.{{ domain_name_extension }}.
+        1 IN PTR gateway.{{ domain_name }}.{{ domain_name_extension }}.
 
 
   - name: Change file ownership to named for db
     ansible.builtin.file:
-      path: /var/named/{{ domainName }}.local.db 
+      path: /var/named/{{ domain_name }}.{{ domain_name_extension }}.db 
       group: named 
 
-  # - name: Allow named to have access to {{ domainName }}.local.db
-  #   command: chown :named /var/named/{{ domainName }}.local.db
+  # - name: Allow named to have access to {{ domain_name }}.{{ domain_name_extension }}.db
+  #   command: chown :named /var/named/{{ domain_name }}.{{ domain_name_extension }}.db
 
 
   - name: Change file ownership to named for db
     ansible.builtin.file:
-      path: /var/named/{{ domainName }}.local.rev 
+      path: /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev 
       group: named 
 
-  # - name: Allow named to have access to {{ domainName }}.local.rev
-  #   command: chown :named /var/named/{{ domainName }}.local.rev
+  # - name: Allow named to have access to {{ domain_name }}.{{ domain_name_extension }}.rev
+  #   command: chown :named /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev
 
 
   - name: named-checkconf
@@ -212,10 +213,10 @@
 
 
   - name: add domain .db files to the named-checkzone
-    command: named-checkzone {{ domainName }}.local /var/named/{{ domainName }}.local.db
+    command: named-checkzone {{ domain_name }}.{{ domain_name_extension }} /var/named/{{ domain_name }}.{{ domain_name_extension }}.db
 
   - name: add domain .rev files to the named-checkzone
-    command: named-checkzone {{ dns_ip }} /var/named/{{ domainName }}.local.rev
+    command: named-checkzone {{ data[3].ip }} /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev
 
 
 
@@ -245,12 +246,12 @@
 
   - name: Editing network service
     blockinfile:
-      dest: /etc/sysconfig/network-scripts/ifcfg-{{ dns_interface_in_name }}
+      dest: /etc/sysconfig/network-scripts/ifcfg-{{ data[3].interface_in_name }}
       block: |
         DEFROUTE=yes
-        GATEWAY={{ gateway_ip }}
-        DOMAIN={{ domainName }}.local
-        DNS1={{ dns_ip }}
+        GATEWAY={{ data[0].ip}}
+        DOMAIN={{ domain_name }}.{{ domain_name_extension }}
+        DNS1={{ data[3].ip }}
       insertafter: EOF
 
 # # restart network

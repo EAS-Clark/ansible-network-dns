@@ -1,0 +1,6 @@
+---
+- src: https://github.com/EAS-Clark/ansible-network-dhcp.git
+  scm: git
+  name: ansible-network-dhcp
+  version: main
+
