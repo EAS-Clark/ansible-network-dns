@@ -42,6 +42,7 @@
           mac_address: "{{ hostvars['clark-dns']['data']['mac_address'] }}"
   
   roles:
+    -  {role: ansible-network-gateway,  when: '"clark-gateway" in inventory_hostname'}
     -  {role: ansible-network-dhcp,  when: '"clark-dhcp" in inventory_hostname'}
 
   tasks:
@@ -55,13 +56,13 @@
       name: network
       state: restarted
 
-  - name: reloading network for gateway
+  - name: reloading network for dhcp
     when: "{{ 'clark-dhcp' in inventory_hostname }}"
     service:
       name: network
       state: restarted
 
-  - name: reloading network for gateway
+  - name: reloading network for dns
     when: "{{ 'clark-dns' in inventory_hostname }}"
     service:
       name: network
@@ -72,10 +73,4 @@
     community.general.nmcli:
       conn_name: ens192
       state: absent
-
-  - name: Removing ens192
-    when: "{{ 'clark-dns' in inventory_hostname }}"
-    community.general.nmcli:
-      conn_name: ens192
-      state: absent    
 

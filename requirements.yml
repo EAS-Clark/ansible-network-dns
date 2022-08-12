@@ -4,3 +4,7 @@
   name: ansible-network-dhcp
   version: main
 
+- src: https://github.com/EAS-Clark/ansible-network-gateway.git
+  scm: git
+  name: ansible-network-gateway
+  version: main

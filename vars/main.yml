@@ -1,7 +1,6 @@
 ---
 # vars file for dns
----
-# defaults file for dhcp
+
 
 multi_mode: false
 

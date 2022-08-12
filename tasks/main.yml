@@ -149,7 +149,7 @@
         @ IN NS dns-primary.{{ domain_name }}.{{ domain_name_extension }}.
 
         ;IP for Name Server
-        dns-primary IN A {{ data[3].ip }}
+        dns-primary IN A {{ data[2].ip }}
 
         ;A Record for IP address to Hostname 
 
@@ -157,7 +157,6 @@
     lineinfile:
       dest: "/var/named/{{ domain_name }}.{{ domain_name_extension }}.db"
       insertafter: EOF
-      marker: ";from ansible"
       line: "{{ data[my_idx].name }} IN A {{ data[my_idx].ip }}"
     loop:
      "{{ data }}"
@@ -216,7 +215,7 @@
     command: named-checkzone {{ domain_name }}.{{ domain_name_extension }} /var/named/{{ domain_name }}.{{ domain_name_extension }}.db
 
   - name: add domain .rev files to the named-checkzone
-    command: named-checkzone {{ data[3].ip }} /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev
+    command: named-checkzone {{ data[2].ip }} /var/named/{{ domain_name }}.{{ domain_name_extension }}.rev
 
 
 
@@ -239,6 +238,10 @@
       permanent: yes
       state: enabled
 
+  - name: reloading firewall
+    service:
+      name: firewalld
+      state: restarted
 
 # # edit /etc/sysconfig/network-scripts/ifcfg-ens224
 
@@ -246,12 +249,12 @@
 
   - name: Editing network service
     blockinfile:
-      dest: /etc/sysconfig/network-scripts/ifcfg-{{ data[3].interface_in_name }}
+      dest: /etc/sysconfig/network-scripts/ifcfg-{{ data[2].interface_in_name }}
       block: |
         DEFROUTE=yes
         GATEWAY={{ data[0].ip}}
         DOMAIN={{ domain_name }}.{{ domain_name_extension }}
-        DNS1={{ data[3].ip }}
+        DNS1={{ data[2].ip }}
       insertafter: EOF
 
 # # restart network
@@ -262,9 +265,9 @@
       state: restarted
 
 
-  - name: "Removing {{ dns_interface_out_name }}"
-    community.general.nmcli:
-      conn_name: "{{ dns_interface_out_name }}"
-      state: absent
+  # - name: "Removing {{ dns_interface_out_name }}"
+  #   community.general.nmcli:
+  #     conn_name: "{{ dns_interface_out_name }}"
+  #     state: absent
 
     
